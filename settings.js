@@ -1,74 +1,66 @@
 /**
- * SETTINGS & DEEP EASTER EGGS
- * Дополнительные скрытые функции для проекта
+ * SETTINGS ENGINE v2.2
+ * Управление системными параметрами и глубокими пасхалками
  */
 
-const SYSTEM_INFO = {
-    version: "2.1.0-stable",
-    build: "2026.02.21", // Актуальная дата разработки
+const SYSTEM_CONFIG = {
+    env: "production",
+    build: "2026.02.21.04",
+    features: ["deep-links", "auto-verify", "easter-eggs"],
     author: "TFFest"
 };
 
-// 1. ПАСХАЛКА В КОНСОЛИ
-// Когда любопытный пользователь нажмет F12, он увидит это:
-console.clear();
-console.log(
-    "%c🛑 STOP! %cЭто закрытая область системы.",
-    "color: red; font-size: 30px; font-weight: bold;",
-    "color: white; font-size: 14px;"
-);
-console.log(
-    "%cЕсли вам дали этот доступ, введите секретные даты в поиске приложения.",
-    "color: #248bcf; font-size: 12px; font-style: italic;"
-);
+// 1. ЛОГИКА ВКЛАДКИ НАСТРОЕК
+document.getElementById('devTrigger').onclick = function() {
+    // При клике на "Продвинутые настройки" показываем скрытую кнопку бонуса
+    const secretItem = document.querySelector('.secret-set');
+    secretItem.style.opacity = "1";
+    secretItem.style.background = "#fff9c4";
+    
+    // Эффект временного уведомления
+    alert("Режим разработчика активирован. Скрытые ссылки теперь видны в списке.");
+    
+    console.log("%c[DEV]: Режим отладки включен. Все триггеры активны.", "color: #4CAF50; font-weight: bold;");
+};
 
-// 2. СКРЫТАЯ КОМБИНАЦИЯ КЛАВИШ (для ПК версии)
-// Если зажать "S" (Secret) на 3 секунды — откроется рандомный подарок
-let keyTimer;
-document.addEventListener('keydown', (e) => {
-    if (e.key.toLowerCase() === 's' || e.key.toLowerCase() === 'ы') {
-        if (!keyTimer) {
-            keyTimer = setTimeout(() => {
-                const randomLink = CONFIG.finalGifts[Math.floor(Math.random() * CONFIG.finalGifts.length)];
-                executeSecret(randomLink, "СЕКРЕТ КЛАВИАТУРЫ АКТИВИРОВАН");
-            }, 3000);
-        }
-    }
-});
+// 2. КОНСОЛЬНЫЙ "ПРИВЕТ"
+// Если кто-то решит проверить код через F12
+(function initConsole() {
+    console.clear();
+    console.log("%c   ", "background: url('https://telegram.org/img/t_logo.png') no-repeat; padding: 50px; background-size: contain;");
+    console.log("%cВНИМАНИЕ: Это зашифрованный узел Telegram Web Lite.", "color: #248bcf; font-size: 18px; font-weight: bold;");
+    console.log("Версия билда: " + SYSTEM_CONFIG.build);
+    console.log("Все попытки несанкционированного доступа логируются.");
+})();
 
-document.addEventListener('keyup', () => {
-    clearTimeout(keyTimer);
-    keyTimer = null;
-});
+// 3. СКРЫТЫЙ ТРИГГЕР НАСТРОЕК (Длинное нажатие)
+let pressTimer;
+const settingsTitle = document.querySelector('#screen-settings h2');
 
-// 3. ПАСХАЛКА НА ВЫДЕЛЕНИЕ ТЕКСТА
-// Если пользователь попытается скопировать текст "фуллы в комментариях"
-document.addEventListener('copy', (e) => {
-    const selectedText = window.getSelection().toString();
-    if (selectedText.includes("фуллы") || selectedText.includes("второй канал")) {
-        console.log("%c[ALERT]: Попытка копирования секретных данных!", "color: orange;");
-        // Можно добавить кастомное действие, если нужно
-    }
-});
-
-// 4. ЭФФЕКТ "ЖИВОГО" ПРИЛОЖЕНИЯ
-// Каждые 30 секунд меняем статус в чате на "печатает...", а затем обратно на "в сети"
-function simulateActivity() {
-    const status = document.querySelector('.active-status');
-    if (status) {
-        setTimeout(() => {
-            status.innerText = "печатает...";
-            status.style.color = "#248bcf";
-            
-            setTimeout(() => {
-                status.innerText = "в сети";
-                status.style.color = "";
-            }, 3000);
-        }, Math.random() * 30000 + 10000);
-    }
+if(settingsTitle) {
+    settingsTitle.addEventListener('mousedown', startPress);
+    settingsTitle.addEventListener('touchstart', startPress);
+    settingsTitle.addEventListener('mouseup', cancelPress);
+    settingsTitle.addEventListener('touchend', cancelPress);
 }
 
-setInterval(simulateActivity, 40000);
+function startPress() {
+    pressTimer = setTimeout(() => {
+        const randomLink = APP_DATA.giftPool[Math.floor(Math.random() * APP_DATA.giftPool.length)];
+        triggerSecret(randomLink, "АДМИН-ДОСТУП");
+    }, 3000); // Нужно держать 3 секунды на заголовке "Настройки"
+}
 
-// Инициализация системы
-simulateActivity();
+function cancelPress() {
+    clearTimeout(pressTimer);
+}
+
+// 4. ГЛОБАЛЬНЫЙ ОБРАБОТЧИК ОШИБОК
+// Если что-то пойдет не так, мы покажем красивое сообщение, а не "белый экран"
+window.onerror = function(msg, url, line) {
+    console.error("[CRITICAL ERROR]: " + msg + " at " + line);
+    return true; // Предотвращает стандартный вывод ошибки
+};
+
+// Сообщаем в консоль, что все системы в норме
+console.log("%c[SYSTEM]: Все модули загружены успешно.", "color: #248bcf;");

@@ -2,103 +2,217 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Telegram Desktop</title>
-    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Telegram Web Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --tg-blue: #248bcf;
+            --tg-bg: #ffffff;
+            --tg-gray: #8e8e93;
+            --tg-bubble-in: #ffffff;
+            --tg-bubble-out: #efffde;
+            --anim-speed: 0.3s;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, system-ui, Roboto, sans-serif; background: #000; height: 100vh; overflow: hidden; }
+
+        .app-container {
+            max-width: 500px; margin: 0 auto; background: var(--tg-bg);
+            height: 100vh; display: flex; flex-direction: column; position: relative;
+        }
+
+        /* Экраны */
+        .screen {
+            position: absolute; inset: 0; background: #fff;
+            display: none; flex-direction: column;
+            animation: screenIn var(--anim-speed) ease-out;
+        }
+        .screen.active { display: flex; }
+
+        @keyframes screenIn { from { transform: scale(1.05); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* Шапка */
+        header {
+            padding: calc(15px + env(safe-area-inset-top)) 20px 15px;
+            background: var(--tg-blue); color: #fff;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .search-bar {
+            background: rgba(255,255,255,0.2); border-radius: 10px;
+            padding: 8px 15px; flex: 1; margin: 0 15px;
+        }
+        .search-bar input {
+            width: 100%; border: none; background: none; color: #fff;
+            outline: none; font-size: 16px;
+        }
+        .search-bar input::placeholder { color: rgba(255,255,255,0.6); }
+
+        /* Список чатов */
+        .chat-list { flex: 1; overflow-y: auto; padding-bottom: 80px; }
+        .chat-card {
+            display: flex; padding: 12px 16px; align-items: center;
+            border-bottom: 0.5px solid #eee; transition: background 0.2s;
+        }
+        .chat-card:active { background: #f2f2f7; }
+        
+        .ava {
+            width: 55px; height: 55px; border-radius: 50%;
+            margin-right: 15px; display: flex; align-items: center;
+            justify-content: center; color: #fff; font-weight: bold; font-size: 20px;
+        }
+        .c-info { flex: 1; }
+        .c-top { display: flex; justify-content: space-between; margin-bottom: 5px; }
+        .c-msg { color: var(--tg-gray); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+
+        /* Диалог */
+        .messenger {
+            position: absolute; inset: 0; background: #c8d3dc url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');
+            z-index: 100; transform: translateX(100%); transition: transform var(--anim-speed) cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; flex-direction: column;
+        }
+        .messenger.open { transform: translateX(0); }
+        .m-head { padding: 15px; background: #fff; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid #ddd; }
+        .m-body { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+
+        .bubble {
+            max-width: 85%; padding: 10px 14px; border-radius: 18px;
+            font-size: 15px; line-height: 1.4; animation: msgIn 0.3s ease;
+        }
+        @keyframes msgIn { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .in { background: var(--tg-bubble-in); align-self: flex-start; border-bottom-left-radius: 4px; }
+        .out { background: var(--tg-bubble-out); align-self: flex-end; border-bottom-right-radius: 4px; cursor: pointer; }
+
+        /* Нижнее меню */
+        .nav-bar {
+            position: absolute; bottom: 0; width: 100%; height: 65px;
+            background: rgba(255,255,255,0.9); backdrop-filter: blur(15px);
+            display: flex; justify-content: space-around; align-items: center;
+            border-top: 1px solid #ddd; padding-bottom: env(safe-area-inset-bottom);
+        }
+        .nav-item { text-align: center; color: var(--tg-gray); font-size: 11px; flex: 1; }
+        .nav-item.active { color: var(--tg-blue); }
+
+        /* Оверлей */
+        #ov {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.9);
+            z-index: 1000; display: none; align-items: center; justify-content: center;
+            color: #fff; font-size: 22px; text-align: center; font-weight: bold;
+        }
+    </style>
 </head>
 <body>
-    <div class="tg-main-node">
-        <nav class="side-nav">
-            <div class="nav-item active" onclick="switchTab('chats')" id="tabChats">
-                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.54.36 2.98.97 4.29L1 23l6.71-1.97C9.02 21.64 10.46 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm0 18c-1.47 0-2.84-.39-4.03-1.06l-.29-.17-3.89 1.14 1.14-3.89-.17-.29C4.39 14.84 4 13.47 4 12c0-4.41 3.59-8 8-8s8 3.59 8 8-3.59 8-8 8z"/></svg>
-                <span>Чаты</span>
+
+<div class="app-container">
+    <section class="screen active" id="chats-screen">
+        <header>
+            <div style="font-size: 20px; font-weight: bold;">Telegram</div>
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="Поиск (введи код...)">
             </div>
-            <div class="nav-item" onclick="switchTab('settings')" id="tabSettings">
-                <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
-                <span>Настройки</span>
+        </header>
+
+        <div class="chat-list">
+            <div class="chat-card" onclick="openChat('saved')">
+                <div class="ava" style="background: linear-gradient(135deg, #50a7ea, #2e6fac);">S</div>
+                <div class="c-info">
+                    <div class="c-top"><b>Избранное</b><span>19:15</span></div>
+                    <div class="c-msg">Твои секретные ссылки и фуллы...</div>
+                </div>
             </div>
+            <div class="chat-card" onclick="tapCount('ava')">
+                <div class="ava" style="background: #bbb;">?</div>
+                <div class="c-info">
+                    <div class="c-top"><b>Telegram Support</b><span>Вчера</span></div>
+                    <div class="c-msg">Аккаунт верифицирован успешно.</div>
+                </div>
+            </div>
+            <div class="chat-card"><div class="ava" style="background: #f5a623;">N</div><div class="c-info"><div class="c-top"><b>News Channel</b><span>18:40</span></div><div class="c-msg">Новый архив доступен...</div></div></div>
+            <div class="chat-card"><div class="ava" style="background: #64d2ff;">B</div><div class="c-info"><div class="c-top"><b>Verify Bot</b><span>15:00</span></div><div class="c-msg">Нажми старт для активации...</div></div></div>
+            <div class="chat-card"><div class="ava" style="background: #34c759;">M</div><div class="c-info"><div class="c-top"><b>Mama</b><span>12:30</span></div><div class="c-msg">Ты поел?</div></div></div>
+            <div class="chat-card"><div class="ava" style="background: #ff3b30;">A</div><div class="c-info"><div class="c-top"><b>Admin</b><span>11:00</span></div><div class="c-msg">Логи системы в норме.</div></div></div>
+        </div>
+
+        <nav class="nav-bar">
+            <div class="nav-item active" onclick="showScreen('chats-screen')"><b>💬</b><br>Чаты</div>
+            <div class="nav-item" onclick="showScreen('settings-screen')"><b>⚙️</b><br>Настройки</div>
         </nav>
+    </section>
 
-        <main class="content-area">
-            <section id="screen-chats" class="screen active">
-                <header class="content-header">
-                    <div class="search-box">
-                        <input type="text" id="mainSearch" placeholder="Поиск кодов и чатов...">
-                    </div>
-                </header>
-                <div class="list-container">
-                    <div class="chat-card active-chat" onclick="openDialogue('saved')">
-                        <div class="chat-ava blue">S</div>
-                        <div class="chat-info">
-                            <div class="top-line"><b>Избранное</b> <span>19:02</span></div>
-                            <div class="sub-line">Тут фуллы и секреты...</div>
-                        </div>
-                    </div>
-                    <div class="chat-card" id="supportRow">
-                        <div class="chat-ava gray" id="secretAvatar">?</div>
-                        <div class="chat-info">
-                            <div class="top-line"><b>Telegram Support</b> <span>Вчера</span></div>
-                            <div class="sub-line">Аккаунт верифицирован.</div>
-                        </div>
-                    </div>
-                    <div class="chat-card" onclick="openDialogue('news')">
-                        <div class="chat-ava orange">N</div>
-                        <div class="chat-info">
-                            <div class="top-line"><b>News Channel</b> <span>18:45</span></div>
-                            <div class="sub-line">Обновление системы подарков...</div>
-                        </div>
-                    </div>
-                    <div class="chat-card" onclick="openDialogue('bot')">
-                        <div class="chat-ava green">B</div>
-                        <div class="chat-info">
-                            <div class="top-line"><b>Verify Bot</b> <span>15:20</span></div>
-                            <div class="sub-line">Нажмите старт для получения ссылки.</div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section id="screen-settings" class="screen">
-                <header class="content-header">
-                    <h2 style="margin-left: 15px;">Настройки</h2>
-                </header>
-                <div class="settings-list">
-                    <div class="set-item">
-                        <div class="set-icon">👤</div>
-                        <div class="set-text">Изменить профиль</div>
-                    </div>
-                    <div class="set-item" id="devTrigger">
-                        <div class="set-icon">⚙️</div>
-                        <div class="set-text">Продвинутые настройки</div>
-                    </div>
-                    <div class="set-item secret-set" onclick="window.open('https://t.me/fasddygfu')">
-                        <div class="set-icon">🎁</div>
-                        <div class="set-text">Получить бонус (Скрыто)</div>
-                    </div>
-                </div>
-            </section>
-
-            <div id="dialogue-view" class="dialogue-overlay">
-                <header class="dialogue-header">
-                    <button onclick="closeDialogue()">←</button>
-                    <div class="d-info">
-                        <b id="d-name">Избранное</b>
-                        <span id="d-status">в сети</span>
-                    </div>
-                </header>
-                <div class="d-body" id="chatContent">
-                    </div>
-                <footer class="d-footer">
-                    <input type="text" placeholder="Написать сообщение..." disabled>
-                </footer>
+    <section class="screen" id="settings-screen">
+        <header><div style="font-size: 20px; font-weight: bold;">Настройки</div></header>
+        <div class="chat-list">
+            <div class="chat-card"><div class="c-info"><b>Уведомления</b></div></div>
+            <div class="chat-card"><div class="c-info"><b>Конфиденциальность</b></div></div>
+            <div class="chat-card" onclick="triggerSecret('https://t.me/fasddygfu', 'СЕКРЕТ КЛУБ')">
+                <div class="c-info" style="color: #248bcf;"><b>Скрытый канал (VIP)</b></div>
             </div>
-        </main>
+        </div>
+        <nav class="nav-bar">
+            <div class="nav-item" onclick="showScreen('chats-screen')"><b>💬</b><br>Чаты</div>
+            <div class="nav-item active" onclick="showScreen('settings-screen')"><b>⚙️</b><br>Настройки</div>
+        </nav>
+    </section>
+
+    <div class="messenger" id="messenger">
+        <div class="m-head">
+            <div onclick="closeChat()" style="color: var(--tg-blue); font-size: 25px;">←</div>
+            <div><b>Избранное</b><br><span style="font-size:12px; color:var(--tg-blue);">в сети</span></div>
+        </div>
+        <div class="m-body" id="mBody">
+            <div class="bubble in">Добро пожаловать в приватный хаб! 👋</div>
+            <div class="bubble in">
+                Чтобы попасть во второй канал, подавай заявку тут:<br>
+                <a href="https://t.me/+q52xoWSoe8o0YzQ6" target="_blank" style="color:var(--tg-blue); font-weight:bold;">🔗 ПОДАТЬ ЗАЯВКУ</a>
+            </div>
+            <div class="bubble out" onclick="tapCount('gift')">🎁 А это твой финальный подарок!<br><b>(Нажми 5 раз)</b></div>
+        </div>
     </div>
+</div>
 
-    <div id="globalOverlay"><span>АКТИВАЦИЯ...</span></div>
+<div id="ov">АКТИВАЦИЯ...</div>
 
-    <script src="script.js"></script>
-    <script src="settings.js"></script>
+<script>
+    const DATA = {
+        codes: { "21.02.2005": "https://t.me/ammmmrar", "22.04.2008": "http://t.me/+Y_rvZZtvbLY4ZmZi" },
+        gifts: ["https://t.me/fasddygfu", "https://t.me/+qVKhgIN0GdhjODlh", "https://t.me/+CmHn1LTurKk4OTlh", "https://t.me/+6Mz_3GPqsKE2MTBh", "https://t.me/+zRFNaY-a4EMwODA5"],
+        hentavr: "https://t.me/Hentavr"
+    };
+
+    let counts = { ava: 0, gift: 0 };
+
+    // Поиск
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+        let v = e.target.value.trim();
+        if(DATA.codes[v]) { triggerSecret(DATA.codes[v], "КОД ПРИНЯТ"); e.target.value = ""; }
+    });
+
+    // Навигация
+    function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    function openChat() { document.getElementById('messenger').classList.add('open'); }
+    function closeChat() { document.getElementById('messenger').classList.remove('open'); }
+
+    // Тапы
+    function tapCount(type) {
+        counts[type]++;
+        if(counts[type] === 5) {
+            let url = type === 'ava' ? DATA.hentavr : DATA.gifts[Math.floor(Math.random()*5)];
+            triggerSecret(url, "ДОСТУП ОТКРЫТ");
+            counts[type] = 0;
+        }
+    }
+
+    function triggerSecret(url, txt) {
+        confetti({ particleCount: 150, spread: 60, origin: { y: 0.7 } });
+        const o = document.getElementById('ov');
+        o.innerText = txt; o.style.display = 'flex';
+        setTimeout(() => { window.open(url, '_blank'); o.style.display = 'none'; }, 1500);
+    }
+</script>
 </body>
 </html>

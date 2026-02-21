@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Telegram Premium Edition</title>
+    <title>Telegram Web Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
     <style>
         :root {
@@ -14,226 +14,386 @@
             --tg-bubble-out: #efffde;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: -apple-system, system-ui, sans-serif; background: #000; height: 100vh; overflow: hidden; }
-
-        .app { max-width: 500px; margin: 0 auto; background: #fff; height: 100vh; position: relative; overflow: hidden; }
-
-        /* Экраны */
-        .screen {
-            position: absolute; inset: 0; background: #fff;
-            display: none; flex-direction: column;
-            z-index: 10; transition: 0.3s ease;
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+        
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background: #000; 
+            height: 100vh; 
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
         }
-        .screen.active { display: flex; }
+
+        .app-container {
+            width: 100%;
+            max-width: 500px;
+            background: var(--tg-bg);
+            height: 100vh;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
 
         /* Шапка */
         header {
             padding: calc(15px + env(safe-area-inset-top)) 15px 15px;
-            background: var(--tg-blue); color: #fff;
-            display: flex; align-items: center; justify-content: space-between;
+            background: var(--tg-blue);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 10;
         }
 
-        .search-box {
-            background: rgba(255,255,255,0.2); border-radius: 8px;
-            padding: 8px 12px; flex: 1; margin-left: 10px;
+        .top-row { display: flex; justify-content: space-between; align-items: center; }
+        .search-bar {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
         }
-        .search-box input {
-            width: 100%; border: none; background: none; color: #fff; outline: none;
+
+        .search-bar input {
+            width: 100%;
+            border: none;
+            background: transparent;
+            color: #fff;
+            font-size: 16px;
         }
-        .search-box input::placeholder { color: rgba(255,255,255,0.7); }
+
+        .search-bar input::placeholder { color: rgba(255, 255, 255, 0.6); }
 
         /* Список чатов */
-        .chat-list { flex: 1; overflow-y: auto; }
-        .item {
-            display: flex; padding: 12px 15px; align-items: center;
-            border-bottom: 0.5px solid #eee; cursor: pointer;
+        .chat-list { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        
+        .chat-card {
+            display: flex;
+            padding: 12px 16px;
+            align-items: center;
+            border-bottom: 0.5px solid #eee;
+            cursor: pointer;
+            transition: background 0.2s;
         }
-        .item:active { background: #f2f2f7; }
-        .ava {
-            width: 55px; height: 55px; border-radius: 50%;
-            margin-right: 15px; display: flex; align-items: center; justify-content: center;
-            color: #fff; font-weight: bold; font-size: 20px; flex-shrink: 0;
+
+        .chat-card:active { background: #f2f2f7; }
+
+        .avatar {
+            width: 54px; height: 54px;
+            border-radius: 50%;
+            margin-right: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 20px;
+            flex-shrink: 0;
         }
-        .info { flex: 1; overflow: hidden; }
-        .name { display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 4px; }
-        .msg { color: var(--tg-gray); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        /* Мессенджер */
-        #messenger { z-index: 100; transform: translateX(100%); display: flex; }
-        #messenger.active { transform: translateX(0); }
-        .m-head { padding: 15px; background: #fff; display: flex; align-items: center; border-bottom: 1px solid #ddd; }
-        .m-body { 
-            flex: 1; padding: 15px; background: #c8d3dc url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');
-            display: flex; flex-direction: column; gap: 8px; overflow-y: auto;
+        .chat-info { flex: 1; overflow: hidden; }
+        .chat-name { display: flex; justify-content: space-between; margin-bottom: 4px; font-weight: 600; font-size: 16px; }
+        .chat-msg { color: var(--tg-gray); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* Экран диалога */
+        .messenger-view {
+            position: absolute;
+            inset: 0;
+            background: #c8d3dc url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');
+            background-size: cover;
+            z-index: 100;
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
         }
-        .bubble { padding: 8px 12px; border-radius: 15px; max-width: 85%; font-size: 15px; box-shadow: 0 1px 1px rgba(0,0,0,0.1); }
-        .in { background: #fff; align-self: flex-start; border-bottom-left-radius: 4px; }
-        .out { background: var(--tg-bubble-out); align-self: flex-end; border-bottom-right-radius: 4px; }
 
-        /* Вкладки снизу */
-        .tabs { height: 60px; border-top: 1px solid #ddd; display: flex; background: #f9f9f9; }
-        .tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--tg-gray); font-size: 11px; }
-        .tab.active { color: var(--tg-blue); }
+        .messenger-view.active { transform: translateX(0); }
 
-        /* Окно предпросмотра кодов */
+        .m-header {
+            padding: calc(10px + env(safe-area-inset-top)) 15px 10px;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .back-btn { color: var(--tg-blue); font-size: 24px; margin-right: 20px; cursor: pointer; padding: 5px; }
+
+        .m-body { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+
+        .bubble {
+            max-width: 85%;
+            padding: 10px 14px;
+            border-radius: 16px;
+            font-size: 15px;
+            line-height: 1.4;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            position: relative;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .bubble.in { background: var(--tg-bubble-in); align-self: flex-start; border-bottom-left-radius: 4px; }
+        .bubble.out { background: var(--tg-bubble-out); align-self: flex-end; border-bottom-right-radius: 4px; }
+
+        .bubble a { color: var(--tg-blue); text-decoration: none; font-weight: bold; }
+
+        /* Таб-бар */
+        .tabs {
+            height: 60px;
+            background: #f9f9f9;
+            border-top: 1px solid #ddd;
+            display: flex;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .tab-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--tg-gray);
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .tab-item.active { color: var(--tg-blue); }
+        .tab-icon { font-size: 22px; margin-bottom: 2px; }
+
+        /* Модальное окно кодов */
         #codeModal {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.8);
-            z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
         }
-        .modal-card { background: #fff; border-radius: 15px; width: 100%; max-width: 320px; overflow: hidden; animation: pop 0.3s ease; }
-        @keyframes pop { from { transform: scale(0.8); opacity: 0; } }
-        .modal-head { padding: 15px; background: var(--tg-blue); color: #fff; font-weight: bold; text-align: center; }
-        .modal-body { padding: 10px; }
-        .code-link {
-            display: block; padding: 12px; margin-bottom: 8px; background: #f1f1f2;
-            border-radius: 8px; text-decoration: none; color: #222; font-size: 14px; font-weight: 500;
+
+        .modal-content {
+            background: #fff;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 340px;
+            overflow: hidden;
+            animation: zoomIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .code-link:active { background: #e2e2e5; }
-        .close-modal { text-align: center; padding: 10px; color: var(--tg-gray); font-size: 13px; cursor: pointer; }
+
+        @keyframes zoomIn { from { transform: scale(0.8); opacity: 0; } }
+
+        .modal-header { background: var(--tg-blue); color: #fff; padding: 15px; text-align: center; font-weight: bold; }
+        .modal-body { padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+        
+        .code-link-btn {
+            background: #f1f1f2;
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+            text-decoration: none;
+            color: #222;
+            font-weight: 500;
+            transition: 0.2s;
+        }
+        .code-link-btn:active { background: #e2e2e5; transform: scale(0.98); }
+
+        .modal-close { text-align: center; padding: 12px; color: var(--tg-gray); cursor: pointer; border-top: 1px solid #eee; }
 
     </style>
 </head>
 <body>
 
-<div class="app">
-    <section class="screen active" id="chats-screen">
+<div class="app-container">
+    <section class="screen active" id="chats-screen" style="display: flex; flex-direction: column; height: 100%;">
         <header>
-            <div style="font-size: 19px; font-weight: bold;">Чаты</div>
-            <div class="search-box">
-                <input type="text" id="codeSearch" placeholder="Поиск (введи код)...">
+            <div class="top-row">
+                <span style="font-size: 20px; font-weight: bold;">Telegram</span>
+                <span>⚙️</span>
+            </div>
+            <div class="search-bar">
+                <input type="text" id="globalSearch" placeholder="Поиск по коду..." autocomplete="off">
             </div>
         </header>
+
         <div class="chat-list">
-            <div class="item" onclick="openChat()">
-                <div class="ava" style="background: linear-gradient(135deg, #50a7ea, #2e6fac);">S</div>
-                <div class="info">
-                    <div class="name"><span>Избранное</span> <span>19:20</span></div>
-                    <div class="msg">Тут лежат твои секретки...</div>
+            <div class="chat-card" onclick="openChat('saved')">
+                <div class="avatar" style="background: linear-gradient(135deg, #50a7ea, #2e6fac);">S</div>
+                <div class="chat-info">
+                    <div class="chat-name"><span>Избранное</span> <span>19:45</span></div>
+                    <div class="chat-msg">Если вам интересен наш контент...</div>
                 </div>
             </div>
-            <div class="item" onclick="tapCount('ava')">
-                <div class="ava" id="supAva" style="background: #bbb;">?</div>
-                <div class="info">
-                    <div class="name"><span>Telegram Support</span> <span>Вчера</span></div>
-                    <div class="msg">Верификация прошла успешно.</div>
+
+            <div class="chat-card" onclick="openChat('support')">
+                <div class="avatar" style="background: #bbb;">?</div>
+                <div class="chat-info">
+                    <div class="chat-name"><span>Telegram Support</span> <span>18:10</span></div>
+                    <div class="chat-msg">это картинки, к сожалению...</div>
                 </div>
             </div>
-            <div class="item"><div class="ava" style="background: #f5a623;">N</div><div class="info"><div class="name"><span>News Channel</span><span>18:00</span></div><div class="msg">Добавлены новые материалы...</div></div></div>
-            <div class="item"><div class="ava" style="background: #34c759;">M</div><div class="info"><div class="name"><span>Manager</span><span>15:44</span></div><div class="msg">Все ссылки проверены.</div></div></div>
-            <div class="item"><div class="ava" style="background: #ff3b30;">A</div><div class="info"><div class="name"><span>Admin Console</span><span>12:10</span></div><div class="msg">System log: 0 errors.</div></div></div>
+
+            <div class="chat-card" onclick="openChat('bonus')">
+                <div class="avatar" style="background: #f5a623;">🎁</div>
+                <div class="chat-info">
+                    <div class="chat-name"><span>Final Gift</span> <span>Вчера</span></div>
+                    <div class="chat-msg">А это тебе финальный подарок)))</div>
+                </div>
+            </div>
+
+            <div class="chat-card"><div class="avatar" style="background: #34c759;">M</div><div class="chat-info"><div class="chat-name"><span>Mama</span> <span>12:00</span></div><div class="chat-msg">Приходи обедать!</div></div></div>
+            <div class="chat-card"><div class="avatar" style="background: #ff3b30;">A</div><div class="chat-info"><div class="chat-name"><span>Admin</span> <span>10:30</span></div><div class="chat-msg">Система обновлена.</div></div></div>
         </div>
+
         <div class="tabs">
-            <div class="tab active"><b>💬</b>Чаты</div>
-            <div class="tab" onclick="setScreen('settings-screen')"><b>⚙️</b>Настройки</div>
+            <div class="tab-item active"><span class="tab-icon">💬</span>Чаты</div>
+            <div class="tab-item" onclick="switchScreen('settings-screen')"><span class="tab-icon">⚙️</span>Настройки</div>
         </div>
     </section>
 
-    <section class="screen" id="settings-screen">
-        <header><div style="font-size: 19px; font-weight: bold;">Настройки</div></header>
+    <section class="screen" id="settings-screen" style="display: none; flex-direction: column; height: 100%;">
+        <header><span style="font-size: 20px; font-weight: bold;">Настройки</span></header>
         <div class="chat-list">
-            <div class="item"><div class="info"><b>Уведомления и звуки</b></div></div>
-            <div class="item"><div class="info"><b>Конфиденциальность</b></div></div>
-            <div class="item"><div class="info"><b>Данные и память</b></div></div>
-            <div class="item" style="margin-top:20px;" onclick="tapCount('gift')">
-                <div class="info" style="color:var(--tg-blue)"><b>Секретный подарок 🎁</b></div>
-            </div>
+            <div class="chat-card"><div class="chat-info"><div class="chat-name">Уведомления</div></div></div>
+            <div class="chat-card"><div class="chat-info"><div class="chat-name">Конфиденциальность</div></div></div>
+            <div class="chat-card" onclick="openChat('bonus')"><div class="chat-info"><div class="chat-name" style="color:var(--tg-blue)">Твой подарок</div></div></div>
         </div>
         <div class="tabs">
-            <div class="tab" onclick="setScreen('chats-screen')"><b>💬</b>Чаты</div>
-            <div class="tab active"><b>⚙️</b>Настройки</div>
+            <div class="tab-item" onclick="switchScreen('chats-screen')"><span class="tab-icon">💬</span>Чаты</div>
+            <div class="tab-item active"><span class="tab-icon">⚙️</span>Настройки</div>
         </div>
     </section>
 
-    <section class="screen" id="messenger">
-        <div class="m-head">
-            <div onclick="setScreen('chats-screen')" style="color:var(--tg-blue); font-size:25px; margin-right:15px;">←</div>
-            <div><b>Избранное</b><br><span style="font-size:12px; color:var(--tg-blue);">в сети</span></div>
+    <div class="messenger-view" id="messenger">
+        <div class="m-header">
+            <div class="back-btn" onclick="closeChat()">←</div>
+            <div class="avatar" id="m-avatar" style="width:40px; height:40px; font-size:14px; margin-right:10px;"></div>
+            <div>
+                <b id="m-title"></b><br>
+                <span style="font-size: 12px; color: var(--tg-blue);">в сети</span>
+            </div>
         </div>
-        <div class="m-body">
-            <div class="bubble in">Добро пожаловать. Вводи коды в поиске или ищи пасхалки.</div>
-            <div class="bubble in">Заявка во второй канал тут:<br><a href="https://t.me/+q52xoWSoe8o0YzQ6" style="color:var(--tg-blue); font-weight:bold;">🔗 ЖМИ СЮДА</a></div>
-            <div class="bubble out" onclick="tapCount('gift')">🎁 Нажми на это сообщение 5 раз!</div>
-        </div>
-    </section>
+        <div class="m-body" id="m-body">
+            </div>
+    </div>
 </div>
 
 <div id="codeModal">
-    <div class="modal-card">
-        <div class="modal-head" id="modalTitle">Найдены ссылки</div>
+    <div class="modal-content">
+        <div class="modal-header" id="modalTitle">Код активирован</div>
         <div class="modal-body" id="modalLinks"></div>
-        <div class="close-modal" onclick="closeModal()">Закрыть</div>
+        <div class="modal-close" onclick="closeModal()">Закрыть</div>
     </div>
 </div>
 
 <script>
-    // БАЗА ДАННЫХ КОДОВ
-    const CODES_DB = {
-        "21.02.2005": {
-            title: "Личный Архив 21.02",
-            links: [
-                { name: "📂 Основной канал", url: "https://t.me/ammmmrar" },
-                { name: "⭐ Резерв (VIP)", url: "https://t.me/+qVKhgIN0GdhjODlh" }
-            ]
+    const APP_CONFIG = {
+        codes: {
+            "21.02.2005": {
+                title: "Архив 21.02.2005",
+                links: [{ name: "Открыть Канал 1", url: "https://t.me/ammmmrar" }]
+            },
+            "22.04.2008": {
+                title: "Доступ 22.04.2008",
+                links: [
+                    { name: "Ссылка на вход", url: "http://t.me/+Y_rvZZtvbLY4ZmZi" },
+                    { name: "Запасной вариант", url: "https://t.me/+qVKhgIN0GdhjODlh" }
+                ]
+            }
         },
-        "22.04.2008": {
-            title: "Секретный Хакер 22.04",
-            links: [
-                { name: "🔗 Ссылка на вход", url: "http://t.me/+Y_rvZZtvbLY4ZmZi" },
-                { name: "💬 Чат поддержки", url: "https://t.me/+zRFNaY-a4EMwODA5" },
-                { name: "🎁 Бонус-канал", url: "https://t.me/fasddygfu" }
-            ]
+        chats: {
+            saved: {
+                title: "Избранное",
+                ava: "S",
+                color: "linear-gradient(135deg, #50a7ea, #2e6fac)",
+                messages: [
+                    { type: "in", text: "Если вам интересен наш контент, киньте заявку в наш будущий второй канал, в нем будет больше интересного контента, а также фуллы в комментариях, а не в отдельных каналах как сейчас" },
+                    { type: "in", text: '<a href="https://t.me/+q52xoWSoe8o0YzQ6" target="_blank">🔗 ПОДАТЬ ЗАЯВКУ ВО ВТОРОЙ КАНАЛ</a>' }
+                ]
+            },
+            support: {
+                title: "Telegram Support",
+                ava: "?",
+                color: "#bbb",
+                messages: [
+                    { type: "in", text: "Ваш запрос обработан." },
+                    { type: "in", text: "это картинки, к сожалению, но пойдет тебе" },
+                    { type: "in", text: '<a href="https://t.me/Hentavr" target="_blank">🖼 ОТКРЫТЬ КАРТИНКИ</a>' }
+                ]
+            },
+            bonus: {
+                title: "Final Gift",
+                ava: "🎁",
+                color: "#f5a623",
+                messages: [
+                    { type: "in", text: "А это тебе финальный подарок)))" },
+                    { type: "in", text: 'Ниже список всех доступных бонусов:' },
+                    { type: "in", text: '<a href="https://t.me/fasddygfu" target="_blank">🎁 ГЛАВНЫЙ ПОДАРOК</a>' },
+                    { type: "out", text: 'Дополнительные ссылки:' },
+                    { type: "in", text: '<a href="https://t.me/+qVKhgIN0GdhjODlh" target="_blank">🔗 Ссылка 1</a>' },
+                    { type: "in", text: '<a href="https://t.me/+CmHn1LTurKk4OTlh" target="_blank">🔗 Ссылка 2</a>' },
+                    { type: "in", text: '<a href="https://t.me/+6Mz_3GPqsKE2MTBh" target="_blank">🔗 Ссылка 3</a>' },
+                    { type: "in", text: '<a href="https://t.me/+zRFNaY-a4EMwODA5" target="_blank">🔗 Ссылка 4</a>' }
+                ]
+            }
         }
     };
 
-    const GIFTS = [
-        "https://t.me/fasddygfu", "https://t.me/+qVKhgIN0GdhjODlh", 
-        "https://t.me/+CmHn1LTurKk4OTlh", "https://t.me/+6Mz_3GPqsKE2MTBh"
-    ];
-
-    let counts = { ava: 0, gift: 0 };
-
-    // Поиск кодов
-    document.getElementById('codeSearch').addEventListener('input', function(e) {
-        let val = e.target.value.trim();
-        if(CODES_DB[val]) {
-            showCodeModal(CODES_DB[val]);
+    // Поиск
+    document.getElementById('globalSearch').addEventListener('input', function(e) {
+        const val = e.target.value.trim();
+        if(APP_CONFIG.codes[val]) {
+            const data = APP_CONFIG.codes[val];
+            document.getElementById('modalTitle').innerText = data.title;
+            let html = "";
+            data.links.forEach(l => {
+                html += `<a href="${l.url}" target="_blank" class="code-link-btn">${l.name}</a>`;
+            });
+            document.getElementById('modalLinks').innerHTML = html;
+            document.getElementById('codeModal').style.display = 'flex';
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
             e.target.value = "";
         }
     });
 
-    function showCodeModal(data) {
-        document.getElementById('modalTitle').innerText = data.title;
-        let html = "";
-        data.links.forEach(l => {
-            html += `<a href="${l.url}" target="_blank" class="code-link">${l.name}</a>`;
-        });
-        document.getElementById('modalLinks').innerHTML = html;
-        document.getElementById('codeModal').style.display = 'flex';
-        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-    }
-
     function closeModal() { document.getElementById('codeModal').style.display = 'none'; }
 
-    // Навигация
-    function setScreen(id) {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
+    // Переключение экранов
+    function switchScreen(id) {
+        document.getElementById('chats-screen').style.display = id === 'chats-screen' ? 'flex' : 'none';
+        document.getElementById('settings-screen').style.display = id === 'settings-screen' ? 'flex' : 'none';
     }
 
-    function openChat() { document.getElementById('messenger').classList.add('active'); }
-
-    // Пасхалки
-    function tapCount(type) {
-        counts[type]++;
-        if(counts[type] === 5) {
-            let url = type === 'ava' ? "https://t.me/Hentavr" : GIFTS[Math.floor(Math.random()*GIFTS.length)];
-            window.open(url, '_blank');
-            counts[type] = 0;
-            confetti({ particleCount: 150, velocity: 30 });
-        }
+    // Чат
+    function openChat(chatKey) {
+        const chat = APP_CONFIG.chats[chatKey];
+        const messenger = document.getElementById('messenger');
+        const body = document.getElementById('m-body');
+        const ava = document.getElementById('m-avatar');
+        
+        document.getElementById('m-title').innerText = chat.title;
+        ava.innerText = chat.ava;
+        ava.style.background = chat.color;
+        
+        body.innerHTML = "";
+        chat.messages.forEach(m => {
+            const b = document.createElement('div');
+            b.className = `bubble ${m.type}`;
+            b.innerHTML = m.text;
+            body.appendChild(b);
+        });
+        
+        messenger.classList.add('active');
     }
+
+    function closeChat() { document.getElementById('messenger').classList.remove('active'); }
 </script>
 
 </body>
-</html>
+                                                                                                                                                       </html>
+                                       

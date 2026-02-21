@@ -1,77 +1,105 @@
-// База данных твоих секретов
-const secrets = {
+// Конфигурация твоих секретных данных
+const CONFIG = {
+    // Коды для поиска
     codes: {
         "21.02.2005": "https://t.me/ammmmrar", // Твое ДР
         "22.04.2008": "http://t.me/+Y_rvZZtvbLY4ZmZi" // ДР создателя
     },
-    links: [
+    // Рандомный пул для финального подарка
+    finalGifts: [
+        "https://t.me/fasddygfu",
         "https://t.me/+qVKhgIN0GdhjODlh",
         "https://t.me/+CmHn1LTurKk4OTlh",
         "https://t.me/+6Mz_3GPqsKE2MTBh",
         "https://t.me/+zRFNaY-a4EMwODA5"
-    ]
+    ],
+    hentavr: "https://t.me/Hentavr" // Ссылка для пасхалки с аватаром
 };
 
-// 1. Логика Поиска (Вводим коды сюда)
-const searchInput = document.getElementById('chatSearch');
-searchInput.addEventListener('input', (e) => {
+// Состояние приложения
+let state = {
+    avatarClicks: 0,
+    giftClicks: 0,
+    isSearchOpen: false
+};
+
+// --- ЛОГИКА ИНТЕРФЕЙСА ---
+
+// Переключение панели поиска
+document.getElementById('searchBtn').onclick = () => {
+    state.isSearchOpen = !state.isSearchOpen;
+    const panel = document.getElementById('searchPanel');
+    panel.classList.toggle('open', state.isSearchOpen);
+    if(state.isSearchOpen) document.getElementById('codeSearch').focus();
+};
+
+// Открытие чата "Избранное"
+function viewChat(id) {
+    document.getElementById('messengerView').classList.add('active');
+}
+
+// Кнопка "Назад"
+function goBack() {
+    document.getElementById('messengerView').classList.remove('active');
+}
+
+// --- ЛОГИКА ПАСХАЛОК ---
+
+// 1. Поиск кодов
+document.getElementById('codeSearch').addEventListener('input', (e) => {
     const val = e.target.value.trim();
-    if (secrets.codes[val]) {
-        alert("Доступ разрешен. Перенаправление...");
-        window.open(secrets.codes[val], '_blank');
-        e.target.value = ""; // Очистка
+    if (CONFIG.codes[val]) {
+        executeSecret(CONFIG.codes[val], "ДОСТУП ПО ДАТЕ РАЗРЕШЕН");
+        e.target.value = "";
     }
 });
 
-// 2. Пасхалка "Фуллы в комментариях" (Текст-триггер)
-// Если пользователь выделит текст в чате или нажмет на "Settings"
-document.addEventListener('copy', () => {
-    console.log("%cСекретное сообщение:", "color: #0088cc; font-weight: bold;");
-    console.log("Если вам интересен наш контент, киньте заявку в наш будущий второй канал: https://t.me/+q52xoWSoe8o0YzQ6");
-});
-
-// 3. Пасхалка с картинками (Hentavr)
-// Спрячем её в иконку профиля (клик 5 раз по аватарке в углу)
-let avatarClicks = 0;
-const avatar = document.querySelector('.avatar.blue');
-avatar.style.cursor = "pointer";
-avatar.onclick = () => {
-    avatarClicks++;
-    if (avatarClicks === 5) {
-        if(confirm("https://t.me/Hentavr - это картинки, к сожалению, но пойдет тебе?")) {
-            window.open("https://t.me/Hentavr", "_blank");
-        }
-        avatarClicks = 0;
+// 2. Пасхалка: 5 кликов по аватару поддержки
+document.getElementById('secretAvatar').onclick = (e) => {
+    e.stopPropagation(); // Чтобы не сработал клик по всей строке чата
+    state.avatarClicks++;
+    
+    if (state.avatarClicks === 5) {
+        executeSecret(CONFIG.hentavr, "АРХИВ HENTAVR ОТКРЫТ");
+        state.avatarClicks = 0;
     }
 };
 
-// 4. Финальный подарок (Рандомное место)
-// Появляется если нажать правую кнопку мыши в пустом месте чата
-document.addEventListener('contextmenu', (e) => {
-    e.preventDefault();
-    const gift = document.createElement('div');
-    gift.innerHTML = "🎁 Финальный подарок";
-    gift.style.position = "absolute";
-    gift.style.left = e.pageX + "px";
-    gift.style.top = e.pageY + "px";
-    gift.style.background = "#fff";
-    gift.style.padding = "10px";
-    gift.style.border = "1px solid #333";
-    gift.style.cursor = "pointer";
-    gift.style.zIndex = "1000";
+// 3. Пасхалка: 5 кликов по сообщению "Финальный подарок"
+document.getElementById('giftTrigger').onclick = () => {
+    state.giftClicks++;
     
-    gift.onclick = () => {
-        const giftLinks = [
-            "https://t.me/fasddygfu",
-            ...secrets.links
-        ];
-        // Открывает рандомную ссылку из финального набора
-        const randomLink = giftLinks[Math.floor(Math.random() * giftLinks.length)];
-        window.open(randomLink, '_blank');
-        gift.remove();
-    };
+    if (state.giftClicks === 5) {
+        const randomLink = CONFIG.finalGifts[Math.floor(Math.random() * CONFIG.finalGifts.length)];
+        executeSecret(randomLink, "ФИНАЛЬНЫЙ ПОДАРОК ПОЛУЧЕН");
+        state.giftClicks = 0;
+    }
+};
+
+// --- ФУНКЦИЯ АКТИВАЦИИ ---
+
+function executeSecret(url, message) {
+    // Показываем оверлей
+    const overlay = document.getElementById('globalOverlay');
+    const statusText = document.getElementById('overlayStatus');
     
-    document.body.appendChild(gift);
-    setTimeout(() => gift.remove(), 3000); // Исчезает через 3 сек
-});
-                          
+    overlay.style.display = 'flex';
+    statusText.innerText = message;
+
+    // Праздничный эффект конфетти
+    confetti({
+        particleCount: 150,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#248bcf', '#ffffff', '#00ff00']
+    });
+
+    // Переход по ссылке через небольшую паузу для эффекта
+    setTimeout(() => {
+        window.open(url, '_blank');
+        overlay.style.display = 'none';
+    }, 1500);
+}
+
+// Лог для проверки в консоли (F12)
+console.log("%c[SYSTEM]: Telegram Web Clone Active", "color: #248bcf; font-weight: bold;");

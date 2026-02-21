@@ -2,73 +2,96 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Telegram Web</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Telegram</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
 </head>
-<body class="light-theme">
-    <div class="main-container">
-        <aside class="sidebar">
-            <header class="search-bar">
-                <input type="text" id="chatSearch" placeholder="Поиск">
-            </header>
-            <div class="chats-list">
-                <div class="chat-item active">
-                    <div class="avatar blue">S</div>
-                    <div class="chat-info">
-                        <div class="chat-name">Saved Messages</div>
-                        <div class="chat-last-msg">Тут твои заметки...</div>
+<body>
+    <div class="tg-wrapper">
+        <section class="screen chats-screen active" id="chatsList">
+            <header class="main-header">
+                <div class="header-content">
+                    <div class="menu-btn">
+                        <span></span><span></span><span></span>
+                    </div>
+                    <h1 class="header-title">Telegram</h1>
+                    <div class="search-trigger" id="searchBtn">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                     </div>
                 </div>
-                <div class="chat-item secret-trigger" data-link="https://t.me/ammmmrar">
-                    <div class="avatar gray">?</div>
-                    <div class="chat-info">
-                        <div class="chat-name">Telegram Support</div>
-                        <div class="chat-last-msg">Ваш аккаунт подтвержден.</div>
-                    </div>
-                </div>
-            </div>
-        </aside>
-
-        <main class="chat-window">
-            <header class="chat-header">
-                <div class="chat-title-container">
-                    <span class="chat-title">Saved Messages</span>
-                    <span class="chat-status">online</span>
+                <div class="search-panel" id="searchPanel">
+                    <input type="text" id="codeSearch" placeholder="Поиск сообщений..." autocomplete="off">
                 </div>
             </header>
             
-            <div class="messages-container" id="msgBox">
-                <div class="message incoming">
-                    <div class="bubble">
-                        Добро пожаловать в облачное хранилище!
-                        <span class="time">12:00</span>
+            <div class="chats-feed">
+                <div class="chat-item" onclick="viewChat('saved')">
+                    <div class="avatar-circle saved-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg>
+                    </div>
+                    <div class="chat-details">
+                        <div class="chat-row">
+                            <span class="chat-name">Избранное</span>
+                            <span class="chat-time">18:56</span>
+                        </div>
+                        <div class="chat-preview">Тут твои личные секреты и медиа...</div>
                     </div>
                 </div>
-                <div class="message outgoing">
-                    <div class="bubble">
-                        Нажми на <span class="ghost-link" onclick="window.location.href='https://t.me/ammmmrar'">пустое место</span>, чтобы найти секрет.
-                        <span class="time">12:01</span>
+
+                <div class="chat-item" id="supportRow">
+                    <div class="avatar-circle support-ava" id="secretAvatar">?</div>
+                    <div class="chat-details">
+                        <div class="chat-row">
+                            <span class="chat-name">Telegram Support</span>
+                            <span class="chat-time">Вчера</span>
+                        </div>
+                        <div class="chat-preview">Ваш аккаунт успешно верифицирован.</div>
                     </div>
                 </div>
             </div>
+        </section>
 
-            <footer class="message-input">
-                <input type="text" placeholder="Написать сообщение...">
+        <section class="screen messenger-screen" id="messengerView">
+            <header class="chat-header">
+                <button class="back-link" onclick="goBack()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <div class="active-chat-info">
+                    <div class="active-name">Избранное</div>
+                    <div class="active-status">в сети</div>
+                </div>
+            </header>
+
+            <div class="message-list" id="messageContainer">
+                <div class="msg-bubble incoming animate-msg">
+                    <div class="msg-text">
+                        Если вам интересен наш контент, киньте заявку в наш будущий второй канал, в нем будет больше интересного контента, а также фуллы в комментариях!
+                        <a href="https://t.me/+q52xoWSoe8o0YzQ6" class="inner-link">🔗 ПОДАТЬ ЗАЯВКУ</a>
+                    </div>
+                    <span class="msg-time">18:57</span>
+                </div>
+
+                <div class="msg-bubble outgoing animate-msg" id="giftTrigger">
+                    <div class="msg-text">А это тебе финальный подарок)))<br><b>(Нажми на меня 5 раз)</b></div>
+                    <span class="msg-time">18:58 <span class="read-status">✓✓</span></span>
+                </div>
+            </div>
+
+            <footer class="input-bar">
+                <div class="icon-btn">📎</div>
+                <div class="fake-input">Сообщение</div>
+                <div class="icon-btn">🎤</div>
             </footer>
-        </main>
+        </section>
     </div>
 
-    <script>
-        // Если кликнуть по "поддержке" 3 раза — переход в канал
-        let clicks = 0;
-        document.querySelector('.secret-trigger').addEventListener('click', () => {
-            clicks++;
-            if(clicks >= 3) {
-                window.open('https://t.me/ammmmrar', '_blank');
-            }
-        });
-    </script>
+    <div id="globalOverlay">
+        <div class="loader"></div>
+        <p id="overlayStatus">ПРОВЕРКА КОДА...</p>
+    </div>
+
+    <script src="script.js"></script>
+    <script src="settings.js"></script>
 </body>
 </html>
-  

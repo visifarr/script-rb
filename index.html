@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram Web</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="light-theme">
+    <div class="main-container">
+        <aside class="sidebar">
+            <header class="search-bar">
+                <input type="text" id="chatSearch" placeholder="Поиск">
+            </header>
+            <div class="chats-list">
+                <div class="chat-item active">
+                    <div class="avatar blue">S</div>
+                    <div class="chat-info">
+                        <div class="chat-name">Saved Messages</div>
+                        <div class="chat-last-msg">Тут твои заметки...</div>
+                    </div>
+                </div>
+                <div class="chat-item secret-trigger" data-link="https://t.me/ammmmrar">
+                    <div class="avatar gray">?</div>
+                    <div class="chat-info">
+                        <div class="chat-name">Telegram Support</div>
+                        <div class="chat-last-msg">Ваш аккаунт подтвержден.</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="chat-window">
+            <header class="chat-header">
+                <div class="chat-title-container">
+                    <span class="chat-title">Saved Messages</span>
+                    <span class="chat-status">online</span>
+                </div>
+            </header>
+            
+            <div class="messages-container" id="msgBox">
+                <div class="message incoming">
+                    <div class="bubble">
+                        Добро пожаловать в облачное хранилище!
+                        <span class="time">12:00</span>
+                    </div>
+                </div>
+                <div class="message outgoing">
+                    <div class="bubble">
+                        Нажми на <span class="ghost-link" onclick="window.location.href='https://t.me/ammmmrar'">пустое место</span>, чтобы найти секрет.
+                        <span class="time">12:01</span>
+                    </div>
+                </div>
+            </div>
+
+            <footer class="message-input">
+                <input type="text" placeholder="Написать сообщение...">
+            </footer>
+        </main>
+    </div>
+
+    <script>
+        // Если кликнуть по "поддержке" 3 раза — переход в канал
+        let clicks = 0;
+        document.querySelector('.secret-trigger').addEventListener('click', () => {
+            clicks++;
+            if(clicks >= 3) {
+                window.open('https://t.me/ammmmrar', '_blank');
+            }
+        });
+    </script>
+</body>
+</html>
+  

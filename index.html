@@ -237,20 +237,3 @@
 
 </body>
 </html>
-nts[type]++;
-        if(counts[type] === 5) {
-            let url = type === 'ava' ? DATA.hentavr : DATA.gifts[Math.floor(Math.random()*5)];
-            triggerSecret(url, "ДОСТУП ОТКРЫТ");
-            counts[type] = 0;
-        }
-    }
-
-    function triggerSecret(url, txt) {
-        confetti({ particleCount: 150, spread: 60, origin: { y: 0.7 } });
-        const o = document.getElementById('ov');
-        o.innerText = txt; o.style.display = 'flex';
-        setTimeout(() => { window.open(url, '_blank'); o.style.display = 'none'; }, 1500);
-    }
-</script>
-</body>
-</html>
